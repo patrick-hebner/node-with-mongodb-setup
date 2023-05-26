@@ -1,2 +1,4 @@
 dist
 coverage
+pnpm-lock.json
+package-lock.json

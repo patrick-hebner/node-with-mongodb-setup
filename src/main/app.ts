@@ -5,7 +5,7 @@ const app = express();
 app.use(morgan("dev"));
 
 app.get("/health", (req, res, next) => {
-  res.json({ message: "OK" });
+  res.json({ message: "OK!" });
 });
 
 export default app;

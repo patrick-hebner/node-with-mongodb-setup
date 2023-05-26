@@ -14,7 +14,7 @@
     "test:staged": "pnpm test -- --findRelatedTests",
     "test:ci": "pnpm test -- --coverage",
     "format:ci": "npx prettier --check .",
-    "format:staged": "npx prettier --write .",
+    "format:staged": "npx prettier --write",
     "lint:staged": "eslint --ignore-path .gitignore --ext .ts --fix",
     "lint:ci": "eslint --ignore-path .gitignore --ext .ts"
   },

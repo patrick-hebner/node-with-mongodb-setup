@@ -1,7 +1,7 @@
-version: '3'
+version: "3"
 
 services:
-  mongodb: 
+  mongodb:
     container_name: app-mongodb
     image: mongo:6.0.5
     restart: always
@@ -25,4 +25,3 @@ services:
     command: "pnpm start:watch"
     depends_on:
       - mongodb
-

@@ -1,6 +1,8 @@
-# Steps
+# NodeJs + MongoDB
 
-## Initialize the project
+## Basic Setup and Tools
+
+### Initialize the project
 
 - create folder
 - `pnpm init`
@@ -10,7 +12,7 @@
 nodejs 18.16.0
 ```
 
-## Setup basic folder structure
+### Setup basic folder structure
 
 Create folders (as you like). The `server.ts` file will become the entry point for our application.
 
@@ -24,7 +26,7 @@ src
 test
 ```
 
-## Typescript
+### Typescript
 
 - Install ts
 
@@ -72,7 +74,7 @@ tsconfig-build.json
  pnpm add --save-dev @types/node
 ```
 
-## Compile the code
+### Compile the code
 
 To be able to run our application, we need to transform the `ts` files into `javascript`. We will use the `tsc` typescript compiler, which comes with `typescript` for that. Let's create a simple build script which deletes previously generated files and compiles a fresh version of our code.
 
@@ -103,7 +105,7 @@ Addionally to the build script we adjust the entry point of our package with the
 }
 ```
 
-### Module aliases
+#### Module aliases
 
 We want to add some path aliases to have nicer imports. Therefore we need
 to extend the tsconfig.json. We add path aliases for all our planned slices:
@@ -186,7 +188,7 @@ node dist/main/server.js
 
 If everything works correctly you should see `Hello World` on your console.
 
-## Set up git
+### Set up git
 
 In your project root run following command.
 
@@ -198,7 +200,7 @@ Add a `.gitignore` in your projects root directory. I use this one as a starting
 
 https://github.com/github/gitignore/blob/main/Node.gitignore
 
-## Eslint
+### Eslint
 
 I simply use the init script of eslint with the following choices:
 
@@ -249,7 +251,7 @@ Add a script to `package.json` to run linting for staged files and during the ci
 }
 ```
 
-## Prettier Formatter
+### Prettier Formatter
 
 Install prettier
 
@@ -285,7 +287,7 @@ We also add a script to `package.json` to run formatting for staged files and du
 }
 ```
 
-## Jest and Supertest
+### Jest and Supertest
 
 Ok, let's continue with the setup for our tests. We want to use `jest`
 with typescript and mongodb to test our code. To write tests for our
@@ -397,7 +399,7 @@ at the top of `jest.config.js`. After that we add a transform option for `ts-jes
 }
 ```
 
-### Add test scripts
+#### Add test scripts
 
 Add test scripts in `package.json`
 
@@ -428,7 +430,7 @@ describe("example", () => {
 });
 ```
 
-## Husky
+### Husky
 
 Now we also want to install `husky` to improve our commits before they go
 into git. What we want to do:
@@ -494,4 +496,215 @@ Finally we need to run the following script to create a configuration file.
 
 ```bash
 echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
+```
+
+## Express
+
+Installation
+
+- express: webframework
+- morgan: logging middleware
+
+```bash
+pnpm add express morgan
+```
+
+Add types
+
+```bash
+pnpm add --save-dev @types/express @types/morgan
+```
+
+### Add a minimal server
+
+At first we add a `app.ts` in the main folder.
+
+[app.ts]
+
+```js
+import express from "express";
+import morgan from "morgan";
+
+const app = express();
+app.use(morgan("dev"));
+
+app.get("/health", (req, res, next) => {
+  res.json({ message: "OK" });
+});
+
+export default app;
+```
+
+We then import the created app into `server.ts` and listen to it. Before that we create a `main/config/env.ts` to hold our environment variables.
+
+[env.ts]
+
+```js
+const port = Number(process.env.PORT ?? 8000);
+const host = process.env.HOST ?? "0.0.0.0";
+
+export { port, host };
+```
+
+We can now use the port and host in the server.ts to listen to incoming requests.
+
+[server.ts]
+
+```js
+import "module-alias/register";
+import app from "@main/app";
+import { host, port } from "./config/env";
+
+app.listen(port, host, () => {
+  console.log(`Server running on ${host}:${port}`);
+});
+```
+
+This should be enought to test our express server with
+
+```bash
+npm run build
+node dist/main/server.js
+```
+
+## Create a dockerfile for the app
+
+Create a `dockerfile` inside the root directory.
+
+```dockerfile
+FROM node:18-alpine
+
+RUN npm install -g pnpm
+
+WORKDIR /usr/src/app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+RUN pnpm build
+
+EXPOSE 8000
+CMD ["pnpm", "start"]
+```
+
+Beacause we don't want to compy anything into the docker file we also need
+a `.dockerignore` file.
+
+```bash
+.pnpm-store
+.vscode
+dist
+node_modules
+```
+
+The dockerfile is good for building our docker image. But to run
+our app together with a database and maybe some other services we
+need a `docker-compose.yaml` file, too. We also want to reload our
+express server inside of docker if any typescript files changes. To
+achieve this we need to install `nodemon`.
+
+```bash
+pnpm add -D nodemon
+```
+
+We add a litte bit of configuration to a newly created `nodemon.json` configuration
+file in our root directory.
+
+```json
+{
+  "verbose": true,
+  "watch": ["src/**/*.ts"],
+  "execMap": {
+    "ts": "pnpm build && pnpm start:dev"
+  }
+}
+```
+
+To run our app with `nodemon` we add a script to `package.json`
+
+```json
+{
+  "scripts": {
+    "start:watch": "nodemon ./src/main/server.ts"
+  }
+}
+```
+
+Now we can create our `docker-compose.yaml`. This is not a docker-compose configuration for production.
+We only use it to run our app with it's necessary dependecies like mongodb in development.
+
+```yaml
+version: "3"
+
+services:
+  mongodb:
+    container_name: app-mongodb
+    image: mongo:6.0.5
+    restart: always
+    volumes:
+      - ./data/db:/data/db
+    ports:
+      - 27017:27017
+  backend:
+    container_name: app-backend
+    build: .
+    ports:
+      - 4000:4000
+      - 9229:9229 # for debugging
+    environment:
+      - PORT=4000
+      - MONGO_URL=mongodb://mongodb:27017/collection
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/pnpm-store
+      - /usr/src/app/node_modules
+    command: "pnpm start:watch"
+    depends_on:
+      - mongodb
+```
+
+Here we add two services a mongodb with some basic configuration and our own app.
+To build our app with docker-compose we use our dockerfile. We overwrite the
+port of our application and the start command. For the start command we use our
+npm script with nodemon. Since we mount the whole project directory to the /app
+directory inside docker, nodemon is able to detect file changes, rebuild the app and
+restart the server.
+
+## Debugging (VS Code)
+
+Script
+
+```json
+scripts: {
+    "start:dev": "node --inspect=0.0.0.0:9229 dist/main/server.js",
+}
+```
+
+Extend `tsconfig.json` and add:
+
+```json
+compilerOptions: {
+    "sourceMap": true,
+}
+```
+
+Add a `launch.json` to your `.vscode` directory. Create it if it does not exist.
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Node (Docker)",
+      "port": 9229,
+      "restart": true,
+      "remoteRoot": "/usr/src/app",
+      "sourceMaps": true,
+      "skipFiles": ["/usr/src/app/node_modules/**/*.js", "<node_internals>/**"]
+    }
+  ]
+}
 ```

@@ -1,0 +1,7 @@
+{
+  "verbose": true,
+  "watch": ["src/**/*.ts"],
+  "execMap": {
+    "ts": "pnpm build && pnpm start:dev"
+  }
+}

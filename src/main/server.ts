@@ -1,5 +1,7 @@
 import "module-alias/register";
+import app from "@main/app";
+import { host, port } from "./config/env";
 
-import { hello } from "@application/test";
-
-hello();
+app.listen(port, host, () => {
+  console.log(`Server running on ${host}:${port}`);
+});

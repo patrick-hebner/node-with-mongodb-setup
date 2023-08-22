@@ -15,8 +15,9 @@
     "test:ci": "pnpm test -- --coverage",
     "format:ci": "npx prettier --check .",
     "format:staged": "npx prettier --write",
-    "lint:staged": "eslint --ignore-path .gitignore --ext .ts --fix",
-    "lint:ci": "eslint --ignore-path .gitignore --ext .ts"
+    "lint:staged": "npm run lint -- --fix --max-warnings 0",
+    "lint:ci": "npm run lint -- --max-warnings 0",
+    "lint": "eslint **/*.ts --ignore-path .gitignore --ext .ts"
   },
   "keywords": [],
   "author": "",

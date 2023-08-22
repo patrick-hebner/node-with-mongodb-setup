@@ -588,7 +588,7 @@ EXPOSE 8000
 CMD ["pnpm", "start"]
 ```
 
-Beacause we don't want to compy anything into the docker file we also need
+Beacause we don't want to copy anything into the docker file we also need
 a `.dockerignore` file.
 
 ```bash

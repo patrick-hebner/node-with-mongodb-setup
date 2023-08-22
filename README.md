@@ -405,14 +405,14 @@ Add test scripts in `package.json`
 
 ```json
 {
-  "test": "jest --passWithNoTests",
+  "test": "jest --passWithNoTests --runInBand",
   "test:watch": "npm run test -- --watch",
   "test:staged": "npm run test -- --findRelatedTests",
   "test:ci": "npm run test -- --coverage"
 }
 ```
 
---runInBand: tests will not be executed in parallel -> could be necessary for mongo db testing
+--runInBand: tests will not be executed in parallel -> could be necessary for mongo db testing -> is more performant in many cases
 
 -- no-cache: if you experience any caching propblems you could use this option
 

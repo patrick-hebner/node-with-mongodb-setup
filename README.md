@@ -217,7 +217,7 @@ npm init @eslint/config
 - Yes install dependencies
 - pnpm
 
-I'm really fine with the default settings I get from this script, because I try to stick a close to the defaults as possible. If I really need
+I'm really fine with the default settings I get from this script, because I try to stick as close to the defaults as possible. If I really need
 some modification I just change it along the way.
 
 ```json

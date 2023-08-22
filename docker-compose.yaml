@@ -5,23 +5,9 @@ services:
     container_name: app-mongodb
     image: mongo:6.0.5
     restart: always
+    env_file:
+      - .docker.env
     volumes:
       - ./data/db:/data/db
     ports:
-      - 27017:27017
-  backend:
-    container_name: app-backend
-    build: .
-    ports:
-      - 4000:4000
-      - 9229:9229 # for debugging
-    environment:
-      - PORT=4000
-      - MONGO_URL=mongodb://mongodb:27017/collection
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/pnpm-store
-      - /usr/src/app/node_modules
-    command: "pnpm start:watch"
-    depends_on:
-      - mongodb
+      - 27077:27017

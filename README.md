@@ -536,17 +536,45 @@ export default app;
 ```
 
 We then import the created app into `server.ts` and listen to it. Before that we create a `main/config/env.ts` to hold our environment variables.
+To be able to load environment variables from .env files for local development we add `dotenv` to our dependencies.
+
+```
+pnpm add dotenv
+```
 
 [env.ts]
 
 ```js
+import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+dotenv.config();
+
 const port = Number(process.env.PORT ?? 8000);
 const host = process.env.HOST ?? "0.0.0.0";
+const database = process.env.DATABASE ?? "test";
+const mongo_admin = process.env.MONGO_ROOT_USERNAME;
+const mongo_password = process.env.MONGO_ROOT_PASSWORD;
+const mongo_port = process.env.MONGO_PORT;
+const mongo_url =
+  process.env.MONGO_URL ??
+  `mongodb://${mongo_admin}:${mongo_password}@localhost:${mongo_port}/?authMechanism=DEFAULT`;
 
-export { port, host };
+console.log(">>> ENV", { port, host, database, mongo_url });
+
+export { port, host, database, mongo_url };
 ```
 
-We can now use the port and host in the server.ts to listen to incoming requests.
+To be able to connect to our local database, we add a .env file with at least the following content:
+
+[.env]
+
+```conf
+MONGO_ROOT_USERNAME=root
+MONGO_ROOT_PASSWORD=example
+MONGO_PORT=27077
+```
+
+You can also overwrite the PORT and HOST if you don't want to use the defaults from env.ts.
+We can now use the port and host in the server.ts to listen to incoming requests and our database config to connect to mongodb.
 
 [server.ts]
 
@@ -632,7 +660,8 @@ To run our app with `nodemon` we add a script to `package.json`
 ```
 
 Now we can create our `docker-compose.yaml`. This is not a docker-compose configuration for production.
-We only use it to run our app with it's necessary dependecies like mongodb in development.
+We only use it to start our mongodb. To set the admin user for the mongodb we need to add a .docker.env and a .evn file
+with some environment variables.
 
 ```yaml
 version: "3"
@@ -642,34 +671,18 @@ services:
     container_name: app-mongodb
     image: mongo:6.0.5
     restart: always
+    env_file:
+      - .docker.env
     volumes:
       - ./data/db:/data/db
     ports:
-      - 27017:27017
-  backend:
-    container_name: app-backend
-    build: .
-    ports:
-      - 4000:4000
-      - 9229:9229 # for debugging
-    environment:
-      - PORT=4000
-      - MONGO_URL=mongodb://mongodb:27017/collection
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/pnpm-store
-      - /usr/src/app/node_modules
-    command: "pnpm start:watch"
-    depends_on:
-      - mongodb
+      - 27077:27017
 ```
 
-Here we add two services a mongodb with some basic configuration and our own app.
-To build our app with docker-compose we use our dockerfile. We overwrite the
-port of our application and the start command. For the start command we use our
-npm script with nodemon. Since we mount the whole project directory to the /app
-directory inside docker, nodemon is able to detect file changes, rebuild the app and
-restart the server.
+```conf
+MONGO_INITDB_ROOT_USERNAME=root
+MONGO_INITDB_ROOT_PASSWORD=example
+```
 
 ## Debugging (VS Code)
 
